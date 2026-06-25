@@ -61,10 +61,9 @@ compensation:
 location:
   country: "United States"
   city: "San Francisco"
-  timezone: "PST"
-  visa_status: "No sponsorship needed"
-  # For remote roles outside your country:
-  # onsite_availability: "1 week/month in any city"
+  timezone: "America/Los_Angeles"
+  visa_status: "US citizen, no sponsorship needed"
+  onsite_availability: "Remote preferred, 1 week/month on-site possible"
 
 # Optional follow-up cadence preferences for `node followup-cadence.mjs`.
 # CLI flags still win for one-off runs (for example `--applied-days 10`).
@@ -92,25 +91,25 @@ cover_letter:
   # Your notice period in calendar days. Surfaced as a prompt default when the
   # JD requests an immediate start. The user confirms the actual value before it
   # appears in the letter.
-  notice_period_days: 30
+  notice_period_days: 14
 
   # Your current professional domain (used to detect domain gaps vs the JD).
   # Plain English, e.g. "digital media", "fintech", "healthcare IT".
-  primary_domain: "your current domain"
+  primary_domain: "digital media"
 
   # Languages you are actively learning. Each entry MAY produce a closing
   # sentence in that language IF the JD location matches one of the listed
   # countries AND the user confirms inclusion during the cover letter flow.
   # Remove the block entirely if not applicable.
-  language_learning:
-    - language: Spanish
-      current_level: B1
-      target_level: B2
-      target_date: "end of 2026"
-      # The sentence to include, written in that language. Keep it one line.
-      sentence: "Estoy aprendiendo español y espero alcanzar el nivel B2 a finales de 2026."
-      # Only trigger this entry when the JD location is in one of these countries.
-      countries: [Spain, Mexico, Argentina, Colombia, Chile]
+  # language_learning:
+  #   - language: Spanish
+  #     current_level: B1
+  #     target_level: C1
+  #     target_date: "end of 2027"
+  #     # The sentence to include, written in that language. Keep it one line.
+  #     sentence: "Estoy aprendiendo español y espero alcanzar el nivel C1 a finales de 2027."
+  #     # Only trigger this entry when the JD location is in one of these countries.
+  #     countries: [Spain, Mexico, Argentina, Colombia, Chile]
 
 # ── Auto-PDF threshold ──────────────────────────────────────────────────────
 #
