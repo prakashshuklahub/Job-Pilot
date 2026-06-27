@@ -17,6 +17,11 @@ mkdirSync(dest, { recursive: true });
 
 const copy = (rel) => {
   const src = path.join(repoRoot, rel);
+  if (!existsSync(src)) {
+    console.error(`\n❌ Missing ${rel} — required for Vercel scan bundle.`);
+    console.error('   Commit portals.yml to git (see ui/README.md → Deploy to Vercel).\n');
+    process.exit(1);
+  }
   const target = path.join(dest, rel);
   mkdirSync(path.dirname(target), { recursive: true });
   cpSync(src, target, { recursive: true });

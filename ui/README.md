@@ -34,7 +34,12 @@ Open http://localhost:3000 — you will see the **same jobs** as on Vercel becau
 
 ### 4. Deploy to Vercel
 
-1. Push repo to GitHub
+1. **Commit `portals.yml`** (repo root) — Vercel builds from git; the scan bundle copies this file at deploy time. It has no secrets (filters + job boards). Keep `config/profile.yml` and `.env` **out** of git.
+   ```bash
+   git add portals.yml
+   git commit -m "chore: add portals config for Vercel scan"
+   git push
+   ```
 2. [vercel.com](https://vercel.com) → Import project
 3. **Root Directory:** `ui`
 4. Environment variables (same Supabase project as local `../.env`):
@@ -46,6 +51,8 @@ Open http://localhost:3000 — you will see the **same jobs** as on Vercel becau
 **Cron:** `vercel.json` runs `/api/cron/scan` daily at **06:00 UTC**.
 
 **Note:** Full scan takes ~1–2 minutes. Requires **Vercel Pro** (`maxDuration: 300`) or scan may timeout on Hobby (10s). Manual "Scan now" has the same limit.
+
+**Sync model:** Local UI and Vercel UI both read the **same Supabase** database. `profile.yml` is only for Cursor evaluations locally — not pushed, not needed on Vercel.
 
 ### 5. CLI scan (same Supabase)
 

@@ -31,7 +31,10 @@ writing-samples/*
 
 # User config and customization (never auto-updated)
 config/profile.yml
-portals.yml
+# profile.yml = PII (email, comp) — keep local; Vercel scan/UI does not use it.
+#
+# portals.yml = scan filters + job boards — COMMIT for Vercel deploy (prebuild bundles it).
+# Safe for a private repo (no secrets). Do NOT commit profile.yml or .env.
 modes/_profile.md
 .update-dismissed
 .update-lock
