@@ -38,6 +38,9 @@ import lever from './providers/lever.mjs';
 import ashby from './providers/ashby.mjs';
 import workday from './providers/workday.mjs';
 import { buildTitleFilter, buildLocationFilter, loadSeenUrls, appendToPipeline, appendToScanHistory } from './scan.mjs';
+import { classifyPostingDate } from './lib/recency.mjs';
+
+export { classifyPostingDate };
 
 // ── Config ──────────────────────────────────────────────────────────
 
@@ -174,16 +177,6 @@ async function loadCompanyList(name, url) {
     try { return { list: JSON.parse(readFileSync(cacheFile, 'utf-8')), status: 'stale' }; } catch { /* fall through */ }
   }
   return { list: [], status: 'empty' };
-}
-
-// Date gate for one posting in a reverse (fresh-first) scan:
-//   'stale'   — dated, but older than the cutoff → always dropped
-//   'undated' — no usable publish date → dropped by default, kept with --include-undated
-//   'keep'    — dated and within the window
-export function classifyPostingDate(job, cutoff) {
-  if (job.postedAt && job.postedAt < cutoff) return 'stale';
-  if (!job.postedAt) return 'undated';
-  return 'keep';
 }
 
 // Cap-aware company sampling. Default: the dataset's natural (alphabetical)

@@ -873,6 +873,17 @@ try {
   if (dateOk) pass('scan-ats-full classifyPostingDate: fresh→keep, old→stale, no-date→undated (the --include-undated gate)');
   else fail('scan-ats-full classifyPostingDate gate is wrong');
 
+  const { buildRecencyFilter } = await import(pathToFileURL(join(ROOT, 'lib/recency.mjs')).href);
+  const now = Date.now();
+  const recencyPass = buildRecencyFilter({ recency_filter: { max_age_hours: 24, undated: 'pass' } });
+  const recencyOk =
+    recencyPass({ postedAt: now }) === true &&
+    recencyPass({ postedAt: now - 25 * 3_600_000 }) === false &&
+    recencyPass({}) === true &&
+    recencyPass({ postedAt: null }) === true;
+  if (recencyOk) pass('buildRecencyFilter: fresh→keep, stale→drop, undated→pass when undated: pass');
+  else fail('buildRecencyFilter undated:pass gate is wrong');
+
   const list = ['a', 'b', 'c', 'd', 'e'];
   const prefix = sampleCompanies(list, 3, false);
   const all = sampleCompanies(list, 99, false);

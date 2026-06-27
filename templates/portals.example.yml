@@ -31,6 +31,16 @@
 # scan_history:
 #   recheck_after_days: 30
 
+# -- Recency filter (optional) --
+# Drop jobs older than the window when the provider supplies postedAt.
+# Jobs without a publish date are kept by default (undated: pass).
+# Omit this block entirely to disable (scan behavior unchanged).
+# CLI overrides: --max-age-hours 24 | --since 1 | env SCAN_MAX_AGE_HOURS
+#
+# recency_filter:
+#   max_age_hours: 24
+#   undated: pass
+
 # -- Location filter (optional) --
 # Filter scanned jobs by location. Applied AFTER title filter, BEFORE dedup.
 # If this entire block is absent, all locations pass (current default behavior).

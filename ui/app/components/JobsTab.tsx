@@ -18,9 +18,16 @@ type JobsTabProps = {
   pageSize: number;
   loading: boolean;
   countryFilter: string;
+  statusFilter: string;
+  dateFrom: string;
+  dateTo: string;
   countryOptions: CountryFilterOption[];
   remoteCountryId: string;
   onCountryFilterChange: (countryId: string) => void;
+  onStatusFilterChange: (status: string) => void;
+  onDateFromChange: (date: string) => void;
+  onDateToChange: (date: string) => void;
+  onClearDateFilters: () => void;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
   onRefresh: () => void;
@@ -34,9 +41,16 @@ export function JobsTab({
   pageSize,
   loading,
   countryFilter,
+  statusFilter,
+  dateFrom,
+  dateTo,
   countryOptions,
   remoteCountryId,
   onCountryFilterChange,
+  onStatusFilterChange,
+  onDateFromChange,
+  onDateToChange,
+  onClearDateFilters,
   onPageChange,
   onPageSizeChange,
   onRefresh,
@@ -75,47 +89,113 @@ export function JobsTab({
         </button>
         <div className="muted toolbar-summary">
           <strong>{jobTotal}</strong> job{jobTotal === 1 ? '' : 's'}
-          {countryFilter !== 'all' ? ' matching filter' : ' in Supabase inbox'}
+          {countryFilter !== 'all' || statusFilter !== 'all' || dateFrom || dateTo
+            ? ' matching filters'
+            : ' in Supabase inbox'}
         </div>
       </div>
 
       <div className="card filters-card">
-        <div className="filters-row">
-          <label className="filter-label" htmlFor="country-filter">
-            Country
-          </label>
-          <select
-            id="country-filter"
-            className="filter-select"
-            value={countryFilter}
-            disabled={loading}
-            onChange={(e) => onCountryFilterChange(e.target.value)}
-          >
-            <option value="all">All countries</option>
-            <option value={remoteCountryId}>Remote / EU</option>
-            {primaryCountries.length > 0 && (
-              <optgroup label="Primary markets">
-                {primaryCountries.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label}
-                  </option>
-                ))}
-              </optgroup>
-            )}
-            {secondaryCountries.length > 0 && (
-              <optgroup label="Other EU markets">
-                {secondaryCountries.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label}
-                  </option>
-                ))}
-              </optgroup>
-            )}
-          </select>
+        <div className="filters-grid">
+          <div className="filters-row">
+            <label className="filter-label" htmlFor="country-filter">
+              Country
+            </label>
+            <select
+              id="country-filter"
+              className="filter-select"
+              value={countryFilter}
+              disabled={loading}
+              onChange={(e) => onCountryFilterChange(e.target.value)}
+            >
+              <option value="all">All countries</option>
+              <option value={remoteCountryId}>Remote / EU</option>
+              {primaryCountries.length > 0 && (
+                <optgroup label="Primary markets">
+                  {primaryCountries.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {secondaryCountries.length > 0 && (
+                <optgroup label="Other EU markets">
+                  {secondaryCountries.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+          </div>
+
+          <div className="filters-row">
+            <label className="filter-label" htmlFor="status-filter">
+              Status
+            </label>
+            <select
+              id="status-filter"
+              className="filter-select"
+              value={statusFilter}
+              disabled={loading}
+              onChange={(e) => onStatusFilterChange(e.target.value)}
+            >
+              <option value="all">All statuses</option>
+              {JOB_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {jobStatusLabel(s)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filters-row">
+            <label className="filter-label" htmlFor="date-from">
+              First seen from
+            </label>
+            <input
+              id="date-from"
+              type="date"
+              className="filter-input"
+              value={dateFrom}
+              disabled={loading}
+              onChange={(e) => onDateFromChange(e.target.value)}
+            />
+          </div>
+
+          <div className="filters-row">
+            <label className="filter-label" htmlFor="date-to">
+              First seen to
+            </label>
+            <input
+              id="date-to"
+              type="date"
+              className="filter-input"
+              value={dateTo}
+              min={dateFrom || undefined}
+              disabled={loading}
+              onChange={(e) => onDateToChange(e.target.value)}
+            />
+          </div>
+
+          {(dateFrom || dateTo) && (
+            <div className="filters-row filters-row-action">
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                disabled={loading}
+                onClick={onClearDateFilters}
+              >
+                Clear dates
+              </button>
+            </div>
+          )}
         </div>
         <p className="muted filters-hint">
-          Filters by the job location field (from scan). Primary markets match{' '}
-          <code>config/profile.yml</code>.
+          Country uses location text from scan. Status and first-seen date filter the inbox in
+          Supabase.
         </p>
       </div>
 
@@ -125,8 +205,8 @@ export function JobsTab({
           <p className="muted">Loading jobs…</p>
         ) : jobTotal === 0 ? (
           <p className="muted">
-            No jobs for this filter. Try <strong>All countries</strong>, run a <strong>Scan</strong>, or
-            loosen filters in <code>portals.yml</code>.
+            No jobs for this filter. Try clearing filters, run a <strong>Scan</strong>, or loosen
+            rules in <code>portals.yml</code>.
           </p>
         ) : (
           <>
@@ -137,7 +217,6 @@ export function JobsTab({
                     <th>Company</th>
                     <th>Role</th>
                     <th>Location</th>
-                    <th>First seen</th>
                     <th>Status</th>
                     <th>Source</th>
                     <th>Link</th>
@@ -155,7 +234,6 @@ export function JobsTab({
                         <td>{j.company}</td>
                         <td>{j.role}</td>
                         <td className="muted">{j.location || '—'}</td>
-                        <td>{j.first_seen}</td>
                         <td>
                           <div className="status-cell">
                             <select

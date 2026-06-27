@@ -35,6 +35,8 @@ try {
  *   node scan.mjs --verify --headed-fallback  # retry anti-bot-blocked URLs in a headed browser (needs a display)
  *   node scan.mjs --verify --throttle          # jittered ~5-10s gap between checks (stay under rate limits)
  *   node scan.mjs --verify --throttle=8000     # custom base gap in ms (waits base..2*base)
+ *   node scan.mjs --max-age-hours 24           # drop dated jobs older than 24h (undated kept)
+ *   node scan.mjs --since 1                    # drop dated jobs older than 1 day (undated kept)
  */
 
 import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, readdirSync } from 'fs';
@@ -53,6 +55,7 @@ import {
   finishScanRun,
   persistScanResults,
 } from './lib/supabase-sync.mjs';
+import { buildRecencyFilter, recencyFilterLabel } from './lib/recency.mjs';
 
 const parseYaml = yaml.load;
 
@@ -825,6 +828,8 @@ async function main() {
   const locationFilter = buildLocationFilter(config.location_filter);
   const salaryFilter = buildSalaryFilter(config.salary_filter);
   const contentFilter = buildContentFilter(config.content_filter);
+  const recencyFilter = buildRecencyFilter(config, args);
+  const recencyLabel = recencyFilterLabel(config, args);
 
   // 3. Resolve a provider for each enabled company / board
   const targets = [];
@@ -883,6 +888,7 @@ async function main() {
   parts.push(`${skippedCount} skipped — no provider matched`);
   console.log(`Scanning ${parts.join('; ')} via providers`);
   if (dryRun) console.log('(dry run — no files will be written)\n');
+  if (recencyLabel) console.log(`Recency filter:        ${recencyLabel}\n`);
 
   // 4. Load dedup sets
   const historyPolicy = scanHistoryPolicy(config);
@@ -907,6 +913,7 @@ async function main() {
   let totalFilteredLocation = 0;
   let totalFilteredSalary = 0;
   let totalFilteredContent = 0;
+  let totalFilteredRecency = 0;
   let totalDupes = 0;
   const newOffers = [];
   const errors = [...resolveErrors];
@@ -951,6 +958,10 @@ async function main() {
         }
         if (!contentFilter(job.description)) {
           totalFilteredContent++;
+          continue;
+        }
+        if (!recencyFilter(job)) {
+          totalFilteredRecency++;
           continue;
         }
         if (seenUrls.has(job.url)) {
@@ -1065,6 +1076,9 @@ async function main() {
   console.log(`Filtered by location:  ${totalFilteredLocation} removed`);
   console.log(`Filtered by salary:   ${totalFilteredSalary} removed`);
   console.log(`Filtered by content:  ${totalFilteredContent} removed`);
+  if (recencyLabel) {
+    console.log(`Filtered by recency:  ${totalFilteredRecency} removed (${recencyLabel})`);
+  }
   console.log(`Duplicates:            ${totalDupes} skipped`);
   if (historyPolicy.recheckAfterDays != null) {
     console.log(`Recheck eligible:      ${seenUrlState.recheckEligible} old scan-history URL(s)`);

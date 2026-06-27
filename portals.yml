@@ -31,6 +31,19 @@
 # scan_history:
 #   recheck_after_days: 30
 
+# -- Recency filter (optional) --
+# When enabled, drops jobs whose provider supplies postedAt and the date is
+# older than the window. Jobs without a publish date are kept (undated: pass).
+# Arbeitsagentur boards also support per-board `days:` for API-side filtering.
+#
+# recency_filter:
+#   max_age_hours: 24
+#   undated: pass
+
+recency_filter:
+  max_age_hours: 24
+  undated: pass
+
 # -- Location filter (optional) --
 # Filter scanned jobs by location. Applied AFTER title filter, BEFORE dedup.
 # If this entire block is absent, all locations pass (current default behavior).
@@ -666,11 +679,11 @@ job_boards:
         - "Webentwickler"
       wo: Berlin
       umkreis: 100
-      days: 30
+      days: 1
       remoteNationwide: true
       remoteMatch: filter
     enabled: true
-    notes: "German federal job API — Berlin region + nationwide remote"
+    notes: "German federal job API — Berlin region + nationwide remote (last 24h)"
 
   - name: Arbeitsagentur — Frontend / Full Stack (DE Munich)
     provider: arbeitsagentur
@@ -683,11 +696,11 @@ job_boards:
         - "JavaScript Entwickler"
       wo: München
       umkreis: 80
-      days: 30
+      days: 1
       remoteNationwide: true
       remoteMatch: filter
     enabled: true
-    notes: "German federal job API — Munich region + nationwide remote"
+    notes: "German federal job API — Munich region + nationwide remote (last 24h)"
 
   - name: Arbeitsagentur — Frontend / Full Stack (DE Hamburg)
     provider: arbeitsagentur
@@ -699,11 +712,11 @@ job_boards:
         - "React Entwickler"
       wo: Hamburg
       umkreis: 80
-      days: 30
+      days: 1
       remoteNationwide: true
       remoteMatch: filter
     enabled: true
-    notes: "German federal job API — Hamburg region + nationwide remote"
+    notes: "German federal job API — Hamburg region + nationwide remote (last 24h)"
 
   # ── SolidJobs (Polish market) ──────────────────────────────────────
   # Public API — no auth needed. Division in URL path, campaign=career-ops for tracking.

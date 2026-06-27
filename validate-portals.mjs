@@ -137,6 +137,34 @@ export async function validatePortalsConfig(config, { providerIds = new Set() } 
     }
   }
 
+  if (config.recency_filter !== undefined) {
+    if (!isObject(config.recency_filter)) {
+      add(errors, 'recency_filter', 'recency_filter must be an object');
+    } else {
+      const rf = config.recency_filter;
+      const hasHours = rf.max_age_hours != null;
+      const hasDays = rf.max_age_days != null;
+      if (hasHours && hasDays) {
+        add(errors, 'recency_filter', 'set max_age_hours or max_age_days, not both');
+      } else if (!hasHours && !hasDays) {
+        add(errors, 'recency_filter', 'max_age_hours or max_age_days is required when recency_filter is set');
+      } else if (hasHours) {
+        const h = Number(rf.max_age_hours);
+        if (!Number.isFinite(h) || h <= 0) {
+          add(errors, 'recency_filter.max_age_hours', 'must be a positive number');
+        }
+      } else if (hasDays) {
+        const d = Number(rf.max_age_days);
+        if (!Number.isFinite(d) || d <= 0) {
+          add(errors, 'recency_filter.max_age_days', 'must be a positive number');
+        }
+      }
+      if (rf.undated != null && rf.undated !== 'pass' && rf.undated !== 'reject') {
+        add(errors, 'recency_filter.undated', 'must be pass or reject');
+      }
+    }
+  }
+
   if (config.search_queries !== undefined && !Array.isArray(config.search_queries)) {
     add(errors, 'search_queries', 'search_queries must be an array when set');
   }
