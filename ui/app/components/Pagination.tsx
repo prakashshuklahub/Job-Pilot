@@ -8,7 +8,7 @@ type PaginationProps = {
   onPageSizeChange?: (size: number) => void;
 };
 
-const PAGE_SIZE_OPTIONS = [25, 50, 100];
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 export function Pagination({
   page,

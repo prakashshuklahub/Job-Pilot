@@ -5,12 +5,22 @@ import { JOB_STATUSES, isValidJobStatus, jobStatusLabel } from '@/lib/job-status
 import type { Job } from '../types';
 import { Pagination } from './Pagination';
 
+export type CountryFilterOption = {
+  id: string;
+  label: string;
+  primary?: boolean;
+};
+
 type JobsTabProps = {
   jobs: Job[];
   jobTotal: number;
   page: number;
   pageSize: number;
   loading: boolean;
+  countryFilter: string;
+  countryOptions: CountryFilterOption[];
+  remoteCountryId: string;
+  onCountryFilterChange: (countryId: string) => void;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
   onRefresh: () => void;
@@ -23,6 +33,10 @@ export function JobsTab({
   page,
   pageSize,
   loading,
+  countryFilter,
+  countryOptions,
+  remoteCountryId,
+  onCountryFilterChange,
   onPageChange,
   onPageSizeChange,
   onRefresh,
@@ -32,14 +46,12 @@ export function JobsTab({
   const [draftStatus, setDraftStatus] = useState<Record<string, string>>({});
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  function getDraftStatus(job: Job) {
-    const current = isValidJobStatus(job.status) ? job.status : 'pending';
-    return draftStatus[job.id] ?? current;
-  }
+  const primaryCountries = countryOptions.filter((c) => c.primary);
+  const secondaryCountries = countryOptions.filter((c) => !c.primary);
 
   async function handleStatusUpdate(job: Job) {
-    const next = getDraftStatus(job);
     const current = isValidJobStatus(job.status) ? job.status : 'pending';
+    const next = draftStatus[job.id] ?? current;
     if (next === current) return;
 
     setUpdatingId(job.id);
@@ -62,8 +74,49 @@ export function JobsTab({
           Refresh list
         </button>
         <div className="muted toolbar-summary">
-          <strong>{jobTotal}</strong> job{jobTotal === 1 ? '' : 's'} in Supabase inbox
+          <strong>{jobTotal}</strong> job{jobTotal === 1 ? '' : 's'}
+          {countryFilter !== 'all' ? ' matching filter' : ' in Supabase inbox'}
         </div>
+      </div>
+
+      <div className="card filters-card">
+        <div className="filters-row">
+          <label className="filter-label" htmlFor="country-filter">
+            Country
+          </label>
+          <select
+            id="country-filter"
+            className="filter-select"
+            value={countryFilter}
+            disabled={loading}
+            onChange={(e) => onCountryFilterChange(e.target.value)}
+          >
+            <option value="all">All countries</option>
+            <option value={remoteCountryId}>Remote / EU</option>
+            {primaryCountries.length > 0 && (
+              <optgroup label="Primary markets">
+                {primaryCountries.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            {secondaryCountries.length > 0 && (
+              <optgroup label="Other EU markets">
+                {secondaryCountries.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+          </select>
+        </div>
+        <p className="muted filters-hint">
+          Filters by the job location field (from scan). Primary markets match{' '}
+          <code>config/profile.yml</code>.
+        </p>
       </div>
 
       <div className="card">
@@ -72,8 +125,8 @@ export function JobsTab({
           <p className="muted">Loading jobs…</p>
         ) : jobTotal === 0 ? (
           <p className="muted">
-            No jobs yet. Open the <strong>Scan</strong> tab and run a scan, or run{' '}
-            <code>npm run scan</code> from the repo root.
+            No jobs for this filter. Try <strong>All countries</strong>, run a <strong>Scan</strong>, or
+            loosen filters in <code>portals.yml</code>.
           </p>
         ) : (
           <>

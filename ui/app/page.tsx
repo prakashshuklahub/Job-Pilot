@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { JobsTab } from './components/JobsTab';
+import { JobsTab, type CountryFilterOption } from './components/JobsTab';
 import { ScanTab } from './components/ScanTab';
 import type { Job, ScanRun, TabId } from './types';
 
@@ -13,6 +13,9 @@ export default function DashboardPage() {
   const [jobTotal, setJobTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [countryFilter, setCountryFilter] = useState('all');
+  const [countryOptions, setCountryOptions] = useState<CountryFilterOption[]>([]);
+  const [remoteCountryId, setRemoteCountryId] = useState('remote');
   const [runs, setRuns] = useState<ScanRun[]>([]);
   const [jobsLoading, setJobsLoading] = useState(true);
   const [runsLoading, setRunsLoading] = useState(true);
@@ -20,12 +23,17 @@ export default function DashboardPage() {
   const [scanLog, setScanLog] = useState('');
   const [error, setError] = useState('');
 
-  const loadJobs = useCallback(async (pageIndex: number, limit: number) => {
+  const loadJobs = useCallback(async (pageIndex: number, limit: number, country: string) => {
     setJobsLoading(true);
     setError('');
     try {
       const offset = pageIndex * limit;
-      const res = await fetch(`/api/jobs?limit=${limit}&offset=${offset}`);
+      const params = new URLSearchParams({
+        limit: String(limit),
+        offset: String(offset),
+      });
+      if (country && country !== 'all') params.set('country', country);
+      const res = await fetch(`/api/jobs?${params}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed to load jobs');
       setJobs(json.jobs ?? []);
@@ -34,6 +42,18 @@ export default function DashboardPage() {
       setError(e instanceof Error ? e.message : 'Failed to load jobs');
     } finally {
       setJobsLoading(false);
+    }
+  }, []);
+
+  const loadMarkets = useCallback(async () => {
+    try {
+      const res = await fetch('/api/markets');
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to load country filters');
+      setCountryOptions(json.countries ?? []);
+      setRemoteCountryId(json.remote?.id ?? 'remote');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load country filters');
     }
   }, []);
 
@@ -63,14 +83,20 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadRuns();
+    loadMarkets();
     refreshJobTotal();
-  }, [loadRuns, refreshJobTotal]);
+  }, [loadRuns, loadMarkets, refreshJobTotal]);
 
   useEffect(() => {
     if (tab === 'jobs') {
-      loadJobs(page, pageSize);
+      loadJobs(page, pageSize, countryFilter);
     }
-  }, [tab, page, pageSize, loadJobs]);
+  }, [tab, page, pageSize, countryFilter, loadJobs]);
+
+  function handleCountryFilterChange(country: string) {
+    setCountryFilter(country);
+    setPage(0);
+  }
 
   async function runScan() {
     setTab('scan');
@@ -84,7 +110,7 @@ export default function DashboardPage() {
       if (!res.ok || !json.ok) {
         throw new Error(json.error || `Scan failed (exit ${json.exitCode})`);
       }
-      await Promise.all([loadRuns(), loadJobs(0, pageSize)]);
+      await Promise.all([loadRuns(), loadJobs(0, pageSize, countryFilter)]);
       setPage(0);
       setTab('jobs');
     } catch (e) {
@@ -176,9 +202,13 @@ export default function DashboardPage() {
           page={page}
           pageSize={pageSize}
           loading={jobsLoading}
+          countryFilter={countryFilter}
+          countryOptions={countryOptions}
+          remoteCountryId={remoteCountryId}
+          onCountryFilterChange={handleCountryFilterChange}
           onPageChange={setPage}
           onPageSizeChange={handlePageSizeChange}
-          onRefresh={() => loadJobs(page, pageSize)}
+          onRefresh={() => loadJobs(page, pageSize, countryFilter)}
           onStatusUpdate={updateJobStatus}
         />
       )}
