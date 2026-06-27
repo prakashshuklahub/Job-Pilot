@@ -16,25 +16,28 @@ No import needed. Supabase starts empty. Click **Scan now** in the UI (or wait f
 
 Optional: to migrate an old `data/pipeline.md` inbox, run `node scripts/import-pipeline-to-supabase.mjs` — skip this if you want a clean slate.
 
-### 3. Local dev
+### 3. Local dev (same Supabase as production)
 
 ```bash
 cd ui
-cp .env.example .env.local
-# fill SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY
+cp .env.example .env.local   # optional — only CRON_SECRET or overrides
+
+# Supabase credentials live in repo root .env (shared with npm run scan):
+#   SUPABASE_URL
+#   SUPABASE_SERVICE_ROLE_KEY
 
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000
+Open http://localhost:3000 — you will see the **same jobs** as on Vercel because both use one Supabase project.
 
 ### 4. Deploy to Vercel
 
 1. Push repo to GitHub
 2. [vercel.com](https://vercel.com) → Import project
 3. **Root Directory:** `ui`
-4. Environment variables:
+4. Environment variables (same Supabase project as local `../.env`):
    - `SUPABASE_URL`
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `CRON_SECRET` (random string — Vercel Cron sends `Authorization: Bearer <CRON_SECRET>`)
@@ -44,30 +47,28 @@ Open http://localhost:3000
 
 **Note:** Full scan takes ~1–2 minutes. Requires **Vercel Pro** (`maxDuration: 300`) or scan may timeout on Hobby (10s). Manual "Scan now" has the same limit.
 
-### 5. Local scan still syncs to Supabase
+### 5. CLI scan (same Supabase)
 
 ```bash
-# from repo root
-export SUPABASE_URL=...
-export SUPABASE_SERVICE_ROLE_KEY=...
+# from repo root — reads .env automatically
 npm run scan
 ```
 
-When env vars are set, `scan.mjs` writes to Supabase **and** `data/pipeline.md`.
+When `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` are set, scans write **only to Supabase** (not `data/pipeline.md`). Local UI and Vercel always show the same inbox.
 
 ## Architecture
 
 ```
-npm run scan / Vercel cron
+npm run scan / Vercel cron / UI "Scan now"
         │
         ▼
    scan.mjs (same filters + dedupe)
         │
-        ├── data/pipeline.md (local, optional)
-        └── Supabase jobs + scan_runs + seen_urls
+        └── Supabase (single source of truth)
+              jobs + seen_urls + scan_runs
                 │
                 ▼
-           Next.js UI on Vercel
+           Next.js UI (local + Vercel)
 ```
 
 ## Dedupe

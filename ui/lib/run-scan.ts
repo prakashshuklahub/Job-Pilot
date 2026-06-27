@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { existsSync } from 'fs';
 import path from 'path';
 
 export const maxDuration = 300;
@@ -8,10 +9,16 @@ export type ScanTrigger = 'cron' | 'manual';
 export function runCareerOpsScan(trigger: ScanTrigger): Promise<{ code: number; output: string }> {
   return new Promise((resolve, reject) => {
     const bundleRoot = path.join(process.cwd(), '.career-ops');
+    const repoRoot = path.resolve(process.cwd(), '..');
+    const useRepoRoot =
+      process.env.CAREER_OPS_SCAN_FROM_REPO === '1' ||
+      (process.env.NODE_ENV !== 'production' && existsSync(path.join(repoRoot, 'scan.mjs')));
+    const cwd = useRepoRoot ? repoRoot : bundleRoot;
+
     const chunks: string[] = [];
 
     const child = spawn('node', ['scan.mjs'], {
-      cwd: bundleRoot,
+      cwd,
       env: {
         ...process.env,
         SCAN_TRIGGER: trigger,

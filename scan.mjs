@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 
+try {
+  const { config } = await import('dotenv');
+  config();
+} catch {
+  // dotenv optional — fall back to process.env
+}
+
 /**
  * scan.mjs — Zero-token portal scanner with a plugin-based provider layer.
  *
@@ -38,6 +45,8 @@ import yaml from 'js-yaml';
 import { makeHttpCtx } from './providers/_http.mjs';
 import {
   isSupabaseConfigured,
+  isSupabasePrimary,
+  offersToSeenRows,
   fetchSeenUrlsFromSupabase,
   fetchSeenCompanyRolesFromSupabase,
   startScanRun,
@@ -464,7 +473,26 @@ function loadSeenCompanyRoles() {
   return seen;
 }
 
+function loadApplicationUrls() {
+  const seen = new Set();
+  if (!existsSync(APPLICATIONS_PATH)) return seen;
+  const text = readFileSync(APPLICATIONS_PATH, 'utf-8');
+  for (const match of text.matchAll(/https?:\/\/[^\s|)]+/g)) {
+    seen.add(match[0]);
+  }
+  return seen;
+}
+
 async function loadSeenUrlsMerged(policy = {}) {
+  if (isSupabasePrimary()) {
+    try {
+      const seen = await fetchSeenUrlsFromSupabase();
+      for (const url of loadApplicationUrls()) seen.add(url);
+      return { seen, recheckEligible: 0 };
+    } catch (err) {
+      console.error(`⚠️  Supabase dedup load failed — falling back to local files: ${err.message}`);
+    }
+  }
   const local = loadSeenUrls(policy);
   if (!isSupabaseConfigured()) return local;
   try {
@@ -975,8 +1003,11 @@ async function main() {
     }
   }
 
-  // 6. Write results
-  if (!dryRun && verifiedOffers.length > 0) {
+  // 6. Write results (local markdown/TSV unless Supabase is the primary store)
+  const supabasePrimary = isSupabasePrimary();
+  const seenHistoryRows = [];
+
+  if (!dryRun && verifiedOffers.length > 0 && !supabasePrimary) {
     appendToPipeline(verifiedOffers);
     appendToScanHistory(verifiedOffers, date);
   }
@@ -987,18 +1018,25 @@ async function main() {
     ...migratedOffers.map(o => ({ ...o, url: o.previousUrl })),
   ];
   if (!dryRun && expiredForHistory.length > 0) {
-    appendToScanHistory(expiredForHistory, date, 'skipped_expired');
+    if (supabasePrimary) {
+      seenHistoryRows.push(...offersToSeenRows(expiredForHistory, date, 'skipped_expired'));
+    } else {
+      appendToScanHistory(expiredForHistory, date, 'skipped_expired');
+    }
   }
   // Pages that loaded but had no Apply control: record so we don't re-verify
   // them next scan, but never let them reach pipeline.md.
   if (!dryRun && droppedOffers.length > 0) {
-    appendToScanHistory(droppedOffers, date, 'skipped_no_apply_control');
+    if (supabasePrimary) {
+      seenHistoryRows.push(...offersToSeenRows(droppedOffers, date, 'skipped_no_apply_control'));
+    } else {
+      appendToScanHistory(droppedOffers, date, 'skipped_no_apply_control');
+    }
   }
   // Guard-rejected URLs (invalid / unsupported protocol / blocked host) are
   // recorded with a precise status so subsequent scans dedup-skip them via
   // loadSeenUrls, but they never reach pipeline.md.
   if (!dryRun && invalidOffers.length > 0) {
-    // Group by code so the TSV reflects the actual reason category.
     const byStatus = new Map();
     for (const o of invalidOffers) {
       const status = guardStatusFor(o.code);
@@ -1006,7 +1044,11 @@ async function main() {
       byStatus.get(status).push(o);
     }
     for (const [status, group] of byStatus) {
-      appendToScanHistory(group, date, status);
+      if (supabasePrimary) {
+        seenHistoryRows.push(...offersToSeenRows(group, date, status));
+      } else {
+        appendToScanHistory(group, date, status);
+      }
     }
   }
 
@@ -1035,9 +1077,11 @@ async function main() {
   }
   console.log(`New offers added:      ${verifiedOffers.length}`);
 
+  let supabaseSyncOk = false;
+
   if (!dryRun && isSupabaseConfigured()) {
     try {
-      await persistScanResults({ offers: verifiedOffers, date });
+      await persistScanResults({ offers: verifiedOffers, date, historyRows: seenHistoryRows });
       if (scanRunId) {
         await finishScanRun(scanRunId, {
           companiesScanned: summaryCompanies,
@@ -1053,7 +1097,9 @@ async function main() {
           ok: true,
         });
       }
-      console.log(`Supabase: synced ${verifiedOffers.length} new job(s) + scan run record`);
+      supabaseSyncOk = true;
+      const store = supabasePrimary ? 'Supabase (primary)' : 'Supabase + local files';
+      console.log(`${store}: synced ${verifiedOffers.length} new job(s) + scan run record`);
     } catch (err) {
       console.error(`⚠️  Supabase sync failed: ${err.message}`);
       if (scanRunId) {
@@ -1089,12 +1135,20 @@ async function main() {
     }
     if (dryRun) {
       console.log('\n(dry run — run without --dry-run to save results)');
-    } else {
+    } else if (supabasePrimary && supabaseSyncOk) {
+      console.log('\nResults saved to Supabase (career_ops_jobs + career_ops_seen_urls)');
+    } else if (supabasePrimary && isSupabaseConfigured() && verifiedOffers.length > 0) {
+      console.log('\n⚠️  Offers found but Supabase sync did not complete — check errors above');
+    } else if (!supabasePrimary) {
       console.log(`\nResults saved to ${PIPELINE_PATH} and ${SCAN_HISTORY_PATH}`);
     }
   }
 
-  console.log(`\n→ Run /career-ops pipeline to evaluate new offers.`);
+  if (supabasePrimary) {
+    console.log('\n→ Open the web UI or Supabase jobs table to review new offers.');
+  } else {
+    console.log('\n→ Run /career-ops pipeline to evaluate new offers.');
+  }
   console.log('→ Share results and get help: https://discord.gg/8pRpHETxa4');
 }
 

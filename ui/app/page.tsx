@@ -1,63 +1,79 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { JobsTab } from './components/JobsTab';
+import { ScanTab } from './components/ScanTab';
+import type { Job, ScanRun, TabId } from './types';
 
-type Job = {
-  id: string;
-  url: string;
-  company: string;
-  role: string;
-  location: string | null;
-  status: string;
-  first_seen: string;
-  source: string | null;
-};
-
-type ScanRun = {
-  id: string;
-  started_at: string;
-  finished_at: string | null;
-  trigger: string;
-  new_added: number | null;
-  duplicates_skipped: number | null;
-  total_found: number | null;
-  ok: boolean | null;
-};
+const DEFAULT_PAGE_SIZE = 25;
 
 export default function DashboardPage() {
+  const [tab, setTab] = useState<TabId>('jobs');
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobTotal, setJobTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [runs, setRuns] = useState<ScanRun[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [jobsLoading, setJobsLoading] = useState(true);
+  const [runsLoading, setRunsLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
   const [scanLog, setScanLog] = useState('');
   const [error, setError] = useState('');
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
+  const loadJobs = useCallback(async (pageIndex: number, limit: number) => {
+    setJobsLoading(true);
     setError('');
     try {
-      const [jobsRes, runsRes] = await Promise.all([
-        fetch('/api/jobs?limit=300'),
-        fetch('/api/scan-runs'),
-      ]);
-      const jobsJson = await jobsRes.json();
-      const runsJson = await runsRes.json();
-      if (!jobsRes.ok) throw new Error(jobsJson.error || 'Failed to load jobs');
-      if (!runsRes.ok) throw new Error(runsJson.error || 'Failed to load scan runs');
-      setJobs(jobsJson.jobs ?? []);
-      setRuns(runsJson.runs ?? []);
+      const offset = pageIndex * limit;
+      const res = await fetch(`/api/jobs?limit=${limit}&offset=${offset}`);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to load jobs');
+      setJobs(json.jobs ?? []);
+      setJobTotal(json.total ?? 0);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Load failed');
+      setError(e instanceof Error ? e.message : 'Failed to load jobs');
     } finally {
-      setLoading(false);
+      setJobsLoading(false);
+    }
+  }, []);
+
+  const loadRuns = useCallback(async () => {
+    setRunsLoading(true);
+    try {
+      const res = await fetch('/api/scan-runs');
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to load scan runs');
+      setRuns(json.runs ?? []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load scan history');
+    } finally {
+      setRunsLoading(false);
+    }
+  }, []);
+
+  const refreshJobTotal = useCallback(async () => {
+    try {
+      const res = await fetch('/api/jobs?limit=1&offset=0');
+      const json = await res.json();
+      if (res.ok) setJobTotal(json.total ?? 0);
+    } catch {
+      /* badge count is non-critical */
     }
   }, []);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    loadRuns();
+    refreshJobTotal();
+  }, [loadRuns, refreshJobTotal]);
+
+  useEffect(() => {
+    if (tab === 'jobs') {
+      loadJobs(page, pageSize);
+    }
+  }, [tab, page, pageSize, loadJobs]);
 
   async function runScan() {
+    setTab('scan');
     setScanning(true);
     setScanLog('Running scan… (may take 1–2 minutes)\n');
     setError('');
@@ -68,7 +84,9 @@ export default function DashboardPage() {
       if (!res.ok || !json.ok) {
         throw new Error(json.error || `Scan failed (exit ${json.exitCode})`);
       }
-      await refresh();
+      await Promise.all([loadRuns(), loadJobs(0, pageSize)]);
+      setPage(0);
+      setTab('jobs');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Scan failed');
     } finally {
@@ -76,124 +94,67 @@ export default function DashboardPage() {
     }
   }
 
-  const lastRun = runs[0];
-  const today = new Date().toISOString().slice(0, 10);
-  const addedToday = runs
-    .filter((r) => r.started_at?.slice(0, 10) === today)
-    .reduce((n, r) => n + (r.new_added ?? 0), 0);
+  function handlePageSizeChange(size: number) {
+    setPageSize(size);
+    setPage(0);
+  }
 
   return (
     <div className="container">
-      <header style={{ marginBottom: '1.5rem' }}>
-        <h1 style={{ margin: '0 0 0.25rem', fontSize: '1.75rem' }}>Career-Ops</h1>
-        <p className="muted" style={{ margin: 0 }}>
-          Daily EU job inbox · same scan logic as <code>npm run scan</code>
-        </p>
+      <header className="app-header">
+        <div>
+          <h1>Career-Ops</h1>
+          <p className="muted">Shared Supabase inbox · same jobs locally and on Vercel</p>
+        </div>
       </header>
 
-      <div className="card" style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-        <button className="btn" type="button" onClick={runScan} disabled={scanning}>
-          {scanning ? 'Scanning…' : 'Scan now'}
+      <nav className="tabs" aria-label="Dashboard sections">
+        <button
+          type="button"
+          className={`tab ${tab === 'jobs' ? 'tab-active' : ''}`}
+          onClick={() => setTab('jobs')}
+        >
+          Jobs
+          {jobTotal > 0 && <span className="tab-badge">{jobTotal}</span>}
         </button>
-        <button className="btn btn-secondary" type="button" onClick={refresh} disabled={loading}>
-          Refresh
+        <button
+          type="button"
+          className={`tab ${tab === 'scan' ? 'tab-active' : ''}`}
+          onClick={() => setTab('scan')}
+        >
+          Scan
+          {scanning && <span className="tab-badge tab-badge-live">…</span>}
         </button>
-        <div className="muted" style={{ fontSize: '0.9rem' }}>
-          Cron: daily 06:00 UTC · Pending jobs: <strong>{jobs.length}</strong>
-          {lastRun && (
-            <>
-              {' '}
-              · Last scan: {new Date(lastRun.started_at).toLocaleString()} ({lastRun.trigger}) —{' '}
-              <strong>{lastRun.new_added ?? 0} new</strong>
-            </>
-          )}
-          {addedToday > 0 && <> · Today total new: <strong>{addedToday}</strong></>}
-        </div>
-      </div>
+      </nav>
 
       {error && (
-        <div className="card" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
+        <div className="card card-error" role="alert">
           {error}
         </div>
       )}
 
-      {scanLog && <pre className="scan-output">{scanLog}</pre>}
-
-      <div className="card">
-        <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>Recent scans</h2>
-        {runs.length === 0 ? (
-          <p className="muted">No scans yet. Run import script or click Scan now.</p>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>When</th>
-                <th>Trigger</th>
-                <th>New</th>
-                <th>Dupes</th>
-                <th>Found</th>
-                <th>OK</th>
-              </tr>
-            </thead>
-            <tbody>
-              {runs.map((r) => (
-                <tr key={r.id}>
-                  <td>{new Date(r.started_at).toLocaleString()}</td>
-                  <td>{r.trigger}</td>
-                  <td>{r.new_added ?? '—'}</td>
-                  <td>{r.duplicates_skipped ?? '—'}</td>
-                  <td>{r.total_found ?? '—'}</td>
-                  <td>{r.ok === false ? '✗' : r.ok ? '✓' : '…'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      <div className="card">
-        <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>Job inbox</h2>
-        {loading ? (
-          <p className="muted">Loading…</p>
-        ) : jobs.length === 0 ? (
-          <p className="muted">
-            No jobs in Supabase yet. Import existing pipeline or run a scan.
-          </p>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table>
-              <thead>
-                <tr>
-                  <th>Company</th>
-                  <th>Role</th>
-                  <th>Location</th>
-                  <th>First seen</th>
-                  <th>Status</th>
-                  <th>Link</th>
-                </tr>
-              </thead>
-              <tbody>
-                {jobs.map((j) => (
-                  <tr key={j.id}>
-                    <td>{j.company}</td>
-                    <td>{j.role}</td>
-                    <td className="muted">{j.location || '—'}</td>
-                    <td>{j.first_seen}</td>
-                    <td>
-                      <span className="badge">{j.status}</span>
-                    </td>
-                    <td>
-                      <a href={j.url} target="_blank" rel="noreferrer">
-                        Open
-                      </a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {tab === 'scan' ? (
+        <ScanTab
+          runs={runs}
+          runsLoading={runsLoading}
+          scanning={scanning}
+          scanLog={scanLog}
+          jobTotal={jobTotal}
+          onScan={runScan}
+          onRefresh={loadRuns}
+        />
+      ) : (
+        <JobsTab
+          jobs={jobs}
+          jobTotal={jobTotal}
+          page={page}
+          pageSize={pageSize}
+          loading={jobsLoading}
+          onPageChange={setPage}
+          onPageSizeChange={handlePageSizeChange}
+          onRefresh={() => loadJobs(page, pageSize)}
+        />
+      )}
     </div>
   );
 }

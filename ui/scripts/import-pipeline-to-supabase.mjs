@@ -2,6 +2,7 @@ import path from 'path';
 import { readFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
+import { TABLES } from '../../lib/supabase-tables.mjs';
 
 /**
  * One-time import: pipeline.md + scan-history.tsv → Supabase
@@ -39,7 +40,7 @@ for (const line of text.split('\n')) {
 }
 
 console.log(`Importing ${jobs.length} jobs…`);
-const { error } = await sb.from('jobs').upsert(jobs, { onConflict: 'url' });
+const { error } = await sb.from(TABLES.jobs).upsert(jobs, { onConflict: 'url' });
 if (error) {
   console.error(error.message);
   process.exit(1);
@@ -52,5 +53,5 @@ const seen = jobs.map((j) => ({
   company: j.company,
   role: j.role,
 }));
-await sb.from('seen_urls').upsert(seen, { onConflict: 'url' });
+await sb.from(TABLES.seenUrls).upsert(seen, { onConflict: 'url' });
 console.log('Done.');

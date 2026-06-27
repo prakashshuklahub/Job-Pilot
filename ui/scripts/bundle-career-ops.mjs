@@ -37,6 +37,7 @@ writeFileSync(
       dependencies: {
         'js-yaml': '^4.1.1',
         '@supabase/supabase-js': '^2.49.1',
+        ws: '^8.18.1',
       },
     },
     null,
