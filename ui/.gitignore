@@ -1,0 +1,4 @@
+.career-ops/
+node_modules/
+.next/
+.env*.local

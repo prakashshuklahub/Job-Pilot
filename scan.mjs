@@ -36,6 +36,14 @@ import path from 'path';
 import yaml from 'js-yaml';
 
 import { makeHttpCtx } from './providers/_http.mjs';
+import {
+  isSupabaseConfigured,
+  fetchSeenUrlsFromSupabase,
+  fetchSeenCompanyRolesFromSupabase,
+  startScanRun,
+  finishScanRun,
+  persistScanResults,
+} from './lib/supabase-sync.mjs';
 
 const parseYaml = yaml.load;
 
@@ -456,6 +464,31 @@ function loadSeenCompanyRoles() {
   return seen;
 }
 
+async function loadSeenUrlsMerged(policy = {}) {
+  const local = loadSeenUrls(policy);
+  if (!isSupabaseConfigured()) return local;
+  try {
+    const remoteUrls = await fetchSeenUrlsFromSupabase();
+    const seen = new Set([...local.seen, ...remoteUrls]);
+    return { seen, recheckEligible: local.recheckEligible };
+  } catch (err) {
+    console.error(`⚠️  Supabase dedup load failed — using local files only: ${err.message}`);
+    return local;
+  }
+}
+
+async function loadSeenCompanyRolesMerged() {
+  const local = loadSeenCompanyRoles();
+  if (!isSupabaseConfigured()) return local;
+  try {
+    const remote = await fetchSeenCompanyRolesFromSupabase();
+    return new Set([...local, ...remote]);
+  } catch (err) {
+    console.error(`⚠️  Supabase company/role dedup failed — using local only: ${err.message}`);
+    return local;
+  }
+}
+
 // ── Pipeline writer ─────────────────────────────────────────────────
 
 function normalizeScanScalar(value) {
@@ -825,9 +858,19 @@ async function main() {
 
   // 4. Load dedup sets
   const historyPolicy = scanHistoryPolicy(config);
-  const seenUrlState = loadSeenUrls(historyPolicy);
+  const seenUrlState = await loadSeenUrlsMerged(historyPolicy);
   const seenUrls = seenUrlState.seen;
-  const seenCompanyRoles = loadSeenCompanyRoles();
+  const seenCompanyRoles = await loadSeenCompanyRolesMerged();
+
+  let scanRunId = null;
+  const scanTrigger = process.env.SCAN_TRIGGER === 'cron' ? 'cron' : 'manual';
+  if (isSupabaseConfigured() && !dryRun) {
+    try {
+      scanRunId = await startScanRun(scanTrigger);
+    } catch (err) {
+      console.error(`⚠️  Supabase scan_runs start failed: ${err.message}`);
+    }
+  }
 
   // 5. Fetch from each target
   const date = new Date().toISOString().slice(0, 10);
@@ -991,6 +1034,35 @@ async function main() {
     console.log(`Invalid (guarded):     ${invalidOffers.length} dropped`);
   }
   console.log(`New offers added:      ${verifiedOffers.length}`);
+
+  if (!dryRun && isSupabaseConfigured()) {
+    try {
+      await persistScanResults({ offers: verifiedOffers, date });
+      if (scanRunId) {
+        await finishScanRun(scanRunId, {
+          companiesScanned: summaryCompanies,
+          jobBoardsScanned: summaryBoards,
+          totalFound,
+          filteredTitle: totalFilteredTitle,
+          filteredLocation: totalFilteredLocation,
+          filteredSalary: totalFilteredSalary,
+          filteredContent: totalFilteredContent,
+          duplicatesSkipped: totalDupes,
+          newAdded: verifiedOffers.length,
+          errors: errors.length ? errors : null,
+          ok: true,
+        });
+      }
+      console.log(`Supabase: synced ${verifiedOffers.length} new job(s) + scan run record`);
+    } catch (err) {
+      console.error(`⚠️  Supabase sync failed: ${err.message}`);
+      if (scanRunId) {
+        try {
+          await finishScanRun(scanRunId, { ok: false, newAdded: 0, errors: [{ message: err.message }] });
+        } catch { /* ignore */ }
+      }
+    }
+  }
 
   if (agentHandoff.length > 0) {
     console.log(`Agent/WebSearch handoff: ${agentHandoff.length} compan${agentHandoff.length === 1 ? 'y' : 'ies'} not handled by zero-token providers`);
