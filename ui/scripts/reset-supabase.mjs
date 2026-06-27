@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * Delete all rows from career_ops_* tables (fresh inbox).
+ * Delete all rows from career_ops_* tables and clear local scan files (fresh inbox).
  *
  * Usage: node ui/scripts/reset-supabase.mjs
- * SQL alternative: supabase/reset.sql in Supabase SQL Editor
+ * SQL alternative: supabase/reset.sql in Supabase SQL Editor (DB only)
  */
 import { config } from 'dotenv';
-import { existsSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { createCareerOpsSupabaseClient } from '../../lib/supabase-client.mjs';
@@ -16,6 +16,24 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '../..');
 for (const p of [join(root, '.env'), join(root, 'ui', '.env.local')]) {
   if (existsSync(p)) config({ path: p });
+}
+
+const SCAN_HISTORY_HEADER = 'url\tfirst_seen\tportal\ttitle\tcompany\tstatus\tlocation\n';
+const PIPELINE_EMPTY = `# Pipeline — Pending URLs
+
+Paste job URLs below as \`- [ ] {url}\` then run \`/career-ops pipeline\`.
+
+## Pending
+
+## Processed
+`;
+
+function resetLocalScanFiles() {
+  mkdirSync(join(root, 'data'), { recursive: true });
+  writeFileSync(join(root, 'data', 'scan-history.tsv'), SCAN_HISTORY_HEADER, 'utf-8');
+  writeFileSync(join(root, 'data', 'pipeline.md'), PIPELINE_EMPTY, 'utf-8');
+  console.log('✓ data/scan-history.tsv: cleared (header only)');
+  console.log('✓ data/pipeline.md: cleared');
 }
 
 const url = process.env.SUPABASE_URL;
@@ -43,4 +61,6 @@ for (const { name, filter } of tables) {
   console.log(`✓ ${name}: deleted ${count ?? 0} row(s)`);
 }
 
-console.log('\nDone — Career-Ops Supabase tables are empty. Run Scan to refill.');
+resetLocalScanFiles();
+
+console.log('\nDone — Career-Ops Supabase tables and local scan files are empty. Run Scan to refill.');

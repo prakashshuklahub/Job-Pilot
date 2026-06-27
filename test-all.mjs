@@ -884,6 +884,16 @@ try {
   if (recencyOk) pass('buildRecencyFilter: fresh→keep, stale→drop, undated→pass when undated: pass');
   else fail('buildRecencyFilter undated:pass gate is wrong');
 
+  const { offerPostedAtDate } = await import(pathToFileURL(join(ROOT, 'lib/supabase-sync.mjs')).href);
+  if (
+    offerPostedAtDate({ postedAt: Date.parse('2026-06-27') }) === '2026-06-27' &&
+    offerPostedAtDate({}) === null
+  ) {
+    pass('offerPostedAtDate converts epoch ms to YYYY-MM-DD or null');
+  } else {
+    fail('offerPostedAtDate conversion is wrong');
+  }
+
   const list = ['a', 'b', 'c', 'd', 'e'];
   const prefix = sampleCompanies(list, 3, false);
   const all = sampleCompanies(list, 99, false);
@@ -4058,6 +4068,16 @@ try {
     pass('normalizeJob trims fields and URL-encodes refnr');
   } else {
     fail(`normalizeJob = ${JSON.stringify(norm)}`);
+  }
+  const withDate = normalizeJob({
+    refnr: 'X',
+    titel: 'Dev',
+    aktuelleVeroeffentlichungsdatum: '2026-06-27',
+  });
+  if (withDate?.postedAt === Date.parse('2026-06-27')) {
+    pass('normalizeJob maps aktuelleVeroeffentlichungsdatum → postedAt');
+  } else {
+    fail(`normalizeJob postedAt = ${JSON.stringify(withDate?.postedAt)}`);
   }
   if (normalizeJob({ titel: 'No refnr' }) === null && normalizeJob({ refnr: 'x', titel: '' }) === null) {
     pass('normalizeJob returns null without a refnr or title');

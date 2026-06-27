@@ -6,6 +6,7 @@ export type Job = {
   location: string | null;
   status: 'pending' | 'applied' | 'interview' | string;
   first_seen: string;
+  posted_at: string | null;
   source: string | null;
 };
 

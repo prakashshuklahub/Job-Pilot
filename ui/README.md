@@ -8,7 +8,8 @@ Browser dashboard for daily job scans. Uses the **same** `scan.mjs` logic, filte
 
 1. Create a project at [supabase.com](https://supabase.com)
 2. SQL Editor → run `../supabase/schema.sql`
-3. Copy **Project URL**, **service_role** key, and **anon** key
+3. Existing project? Also run `../supabase/migrate-posted-at.sql` (adds `posted_at` for employer publish date in the UI)
+4. Copy **Project URL**, **service_role** key, and **anon** key
 
 ### 2. Fresh start (default)
 

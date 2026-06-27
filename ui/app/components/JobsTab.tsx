@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { JOB_STATUSES, isValidJobStatus, jobStatusLabel } from '@/lib/job-status';
+import { formatPostedAt } from '@/lib/format-posted-at';
 import type { Job } from '../types';
 import { Pagination } from './Pagination';
 
@@ -217,6 +218,7 @@ export function JobsTab({
                     <th>Company</th>
                     <th>Role</th>
                     <th>Location</th>
+                    <th>Posted</th>
                     <th>Status</th>
                     <th>Source</th>
                     <th>Link</th>
@@ -234,6 +236,7 @@ export function JobsTab({
                         <td>{j.company}</td>
                         <td>{j.role}</td>
                         <td className="muted">{j.location || '—'}</td>
+                        <td className="muted">{formatPostedAt(j.posted_at)}</td>
                         <td>
                           <div className="status-cell">
                             <select

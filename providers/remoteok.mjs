@@ -33,11 +33,16 @@ export default {
       .filter(j => j && typeof j === 'object'
         && typeof j.position === 'string' && j.position.trim() !== ''
         && typeof j.url === 'string' && /^https?:\/\//i.test(j.url.trim()))
-      .map(j => ({
-        title: j.position.trim(),
-        url: j.url.trim(),
-        company: typeof j.company === 'string' && j.company.trim() ? j.company.trim() : (entry.name || 'RemoteOK'),
-        location: typeof j.location === 'string' ? j.location.trim() : '',
-      }));
+      .map(j => {
+        const row = {
+          title: j.position.trim(),
+          url: j.url.trim(),
+          company: typeof j.company === 'string' && j.company.trim() ? j.company.trim() : (entry.name || 'RemoteOK'),
+          location: typeof j.location === 'string' ? j.location.trim() : '',
+        };
+        const ts = Number(j.date);
+        if (Number.isFinite(ts) && ts > 0) row.postedAt = ts < 1e12 ? ts * 1000 : ts;
+        return row;
+      });
   },
 };

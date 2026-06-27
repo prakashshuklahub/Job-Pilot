@@ -88,12 +88,19 @@ export function normalizeJob(job) {
   const refnr = job && job.refnr;
   const title = String((job && job.titel) || '').trim();
   if (!refnr || !title) return null;
+  const pub = job && job.aktuelleVeroeffentlichungsdatum;
+  let postedAt;
+  if (typeof pub === 'string' && /^\d{4}-\d{2}-\d{2}/.test(pub)) {
+    const ts = Date.parse(pub);
+    if (!Number.isNaN(ts)) postedAt = ts;
+  }
   return {
     title,
     url: DETAIL_BASE + encodeURIComponent(String(refnr)),
     company: String((job && job.arbeitgeber) || '').trim(),
     location: buildLocation(job && job.arbeitsort),
     refnr: String(refnr),
+    ...(postedAt != null ? { postedAt } : {}),
   };
 }
 

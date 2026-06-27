@@ -32,11 +32,18 @@ export default {
       .filter(j => j && typeof j === 'object'
         && typeof j.title === 'string' && j.title.trim() !== ''
         && typeof j.url === 'string' && /^https?:\/\//i.test(j.url.trim()))
-      .map(j => ({
-        title: j.title.trim(),
-        url: j.url.trim(),
-        company: typeof j.company_name === 'string' && j.company_name.trim() ? j.company_name.trim() : (entry.name || 'Remotive'),
-        location: typeof j.candidate_required_location === 'string' ? j.candidate_required_location.trim() : '',
-      }));
+      .map(j => {
+        const row = {
+          title: j.title.trim(),
+          url: j.url.trim(),
+          company: typeof j.company_name === 'string' && j.company_name.trim() ? j.company_name.trim() : (entry.name || 'Remotive'),
+          location: typeof j.candidate_required_location === 'string' ? j.candidate_required_location.trim() : '',
+        };
+        if (typeof j.publication_date === 'string') {
+          const ts = Date.parse(j.publication_date);
+          if (!Number.isNaN(ts)) row.postedAt = ts;
+        }
+        return row;
+      });
   },
 };

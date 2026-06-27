@@ -32,6 +32,7 @@ create table if not exists career_ops_jobs (
   report_path text,
   pdf_path text,
   first_seen date not null,
+  posted_at date,
   notes text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -39,6 +40,7 @@ create table if not exists career_ops_jobs (
 
 create index if not exists career_ops_jobs_status_idx on career_ops_jobs (status);
 create index if not exists career_ops_jobs_first_seen_idx on career_ops_jobs (first_seen desc);
+create index if not exists career_ops_jobs_posted_at_idx on career_ops_jobs (posted_at desc nulls last);
 create index if not exists career_ops_jobs_company_idx on career_ops_jobs (company);
 
 -- Scan audit log (daily pull summary)
