@@ -88,7 +88,25 @@ location_filter:
     - "Madrid"
     - "Belgium"
     - "Brussels"
-    - "Austria"
+    - "Antwerp"
+    - "Ghent"
+    - "Netherlands"
+    - "Nederland"
+    - "Rotterdam"
+    - "Utrecht"
+    - "Eindhoven"
+    - "Poland"
+    - "Polska"
+    - "Gdansk"
+    - "Poznan"
+    - "Lodz"
+    - "Sweden"
+    - "Sverige"
+    - "Gothenburg"
+    - "Malmö"
+    - "Denmark"
+    - "Danmark"
+    - "Aarhus"
     - "Vienna"
     - "Norway"
     - "Oslo"
@@ -122,6 +140,31 @@ location_filter:
     - "Portugal"
     - "Spain"
     - "Belgium"
+    - "Brussels"
+    - "Antwerp"
+    - "Ghent"
+    - "Netherlands"
+    - "Nederland"
+    - "Holland"
+    - "Rotterdam"
+    - "Utrecht"
+    - "Eindhoven"
+    - "The Hague"
+    - "Poland"
+    - "Polska"
+    - "Gdansk"
+    - "Poznan"
+    - "Lodz"
+    - "Sweden"
+    - "Sverige"
+    - "Gothenburg"
+    - "Malmö"
+    - "Denmark"
+    - "Danmark"
+    - "Aarhus"
+    - "Cologne"
+    - "Stuttgart"
+    - "Düsseldorf"
     - "Austria"
     - "Norway"
     - "Lithuania"
@@ -143,11 +186,26 @@ location_filter:
     - "Madrid"
     - "Lisbon"
     - "Brussels"
+    - "Antwerp"
+    - "Ghent"
     - "Zurich"
     - "Vienna"
     - "Warsaw"
     - "Krakow"
     - "Wroclaw"
+    - "Gdansk"
+    - "Poznan"
+    - "Lodz"
+    - "Rotterdam"
+    - "Utrecht"
+    - "Eindhoven"
+    - "The Hague"
+    - "Gothenburg"
+    - "Malmö"
+    - "Aarhus"
+    - "Cologne"
+    - "Stuttgart"
+    - "Düsseldorf"
     - "Prague"
     - "Tallinn"
     - "Vilnius"
@@ -187,23 +245,63 @@ location_filter:
 
 # salary_filter removed — accept all salary ranges when listed (no min/max gate)
 
+# Filters job DESCRIPTION when a provider returns one (Lever, some boards).
+# Empty description → pass. Tuned to cv.md + config/profile.yml stack_focus.
+
 content_filter:
   positive:
+    # Core — React/TS/Node (5+ yrs, Loopcrypto, Enkash, THG)
     - "react"
     - "typescript"
     - "javascript"
+    - "node.js"
     - "node"
     - "next.js"
+    - "nextjs"
+    # Role shape
     - "frontend"
     - "full stack"
     - "fullstack"
+    - "web developer"
+    # Backend adjacency (Express, REST — cv.md)
+    - "express"
+    - "rest api"
+    # Secondary frontend (Townhall — Angular; Enkash/Townhall — Tailwind)
+    - "angular"
+    - "tailwind"
+    # CMS / marketing stack (profile.yml — WordPress/PHP targets)
     - "wordpress"
     - "php"
   negative:
+    # E-commerce CMS you don't ship (not in cv.md)
     - "magento"
-    - "shopify theme"
-    - "salesforce admin"
+    - "shopify"
+    - "prestashop"
+    # Enterprise platforms / admin roles
+    - "salesforce"
     - "sap "
+    - "oracle ebs"
+    - "servicenow"
+    # Mobile / native (not your focus)
+    - "ios"
+    - "android"
+    - "swift"
+    - "kotlin"
+    # Stacks you don't target (title_filter also blocks many of these)
+    - ".net"
+    - "c#"
+    - "ruby on rails"
+    - "drupal"
+    - "joomla"
+    - "embedded"
+    - "firmware"
+    - "devops"
+    - "sre"
+    - "data scientist"
+    - "machine learning"
+    - "scrum master"
+    - "qa engineer"
+    - "test engineer"
 
 # -- Title filter --
 # The scanner uses these keywords to decide if a title is relevant.
@@ -237,6 +335,11 @@ title_filter:
     # Polish market
     - "Programista"
     - "Frontend Developer"
+    - "Programista React"
+    # Dutch / Nordic (English postings common)
+    - "Ontwikkelaar"
+    - "Mjukvaruutvecklare"
+    - "Softwareudvikler"
   negative:
     - "Junior"
     - "Intern"
@@ -264,7 +367,6 @@ title_filter:
     - "Test Engineer"
     - "Scrum Master"
   seniority_boost:
-    - "Senior"
     - "Sr."
     - "Sr "
 
@@ -275,54 +377,152 @@ title_filter:
 # enable/disable individual queries with `enabled: true/false`.
 
 search_queries:
-  # -- EU frontend / full-stack (Prakash Shukla — config/profile.yml) --
+  # -- Primary markets: DE, NL, PL, BE, SE, DK (config/profile.yml) --
 
-  - name: Greenhouse — EU Senior Frontend
-    query: 'site:job-boards.greenhouse.io OR site:boards.greenhouse.io "Senior Frontend" OR "Frontend Engineer" Germany OR Netherlands OR Ireland OR Poland OR "remote Europe"'
+  - name: Greenhouse — DACH + Benelux Frontend
+    query: 'site:job-boards.greenhouse.io OR site:boards.greenhouse.io "Senior Frontend" OR "Frontend Engineer" Germany OR Netherlands OR Belgium OR Berlin OR Amsterdam OR Brussels OR remote Europe'
     enabled: true
 
-  - name: Greenhouse — EU Full Stack React
-    query: 'site:job-boards.greenhouse.io "Full Stack" OR "Fullstack" React TypeScript Germany OR Netherlands OR Berlin OR Amsterdam OR remote'
+  - name: Greenhouse — Poland + Nordics Full Stack
+    query: 'site:job-boards.greenhouse.io "Full Stack" OR "Fullstack" React TypeScript Poland OR Sweden OR Denmark OR Warsaw OR Stockholm OR Copenhagen'
     enabled: true
 
-  - name: Ashby — EU Frontend / Full Stack
-    query: 'site:jobs.ashbyhq.com "Senior Frontend" OR "Full Stack Engineer" React Germany OR Netherlands OR Berlin OR Dublin'
+  - name: Ashby — DACH / Benelux React
+    query: 'site:jobs.ashbyhq.com "Senior Frontend" OR "Full Stack Engineer" React Germany OR Netherlands OR Belgium OR Berlin OR Amsterdam OR Brussels'
+    enabled: true
+
+  - name: Ashby — Poland + Nordics
+    query: 'site:jobs.ashbyhq.com "Frontend" OR "Full Stack" React TypeScript Poland OR Sweden OR Denmark OR remote Europe'
     enabled: true
 
   - name: Lever — EU React / TypeScript
-    query: 'site:jobs.lever.co "Frontend" OR "Full Stack" React TypeScript Germany OR Netherlands OR Ireland OR remote Europe'
+    query: 'site:jobs.lever.co "Frontend" OR "Full Stack" React TypeScript Germany OR Netherlands OR Poland OR Belgium OR Sweden OR Denmark OR remote Europe'
+    enabled: true
+
+  - name: Teamtailor — Sweden / Denmark tech
+    query: 'site:teamtailor.com "Frontend" OR "Full Stack" OR "React" Sweden OR Denmark OR Stockholm OR Copenhagen'
     enabled: true
 
   - name: Remotive — EU Frontend
-    query: 'site:remotive.com "Frontend" OR "Full Stack" React senior Europe'
+    query: 'site:remotive.com "Frontend" OR "Full Stack" React senior Germany OR Netherlands OR Poland OR Europe'
     enabled: true
 
   - name: EU Remote Jobs — Frontend
-    query: 'site:euremotejobs.com "Frontend" OR "Full Stack" OR "React" senior'
+    query: 'site:euremotejobs.com "Frontend" OR "Full Stack" OR "React" senior Germany OR Netherlands OR Europe'
     enabled: true
 
   - name: RemoteOK — EU React
-    query: 'site:remoteok.com "Frontend" OR "React" OR "TypeScript" Europe OR EMEA senior'
+    query: 'site:remoteok.com "Frontend" OR "React" OR "TypeScript" Europe OR EMEA OR Germany OR Netherlands senior'
     enabled: true
 
   - name: WeWorkRemotely — Frontend Europe
-    query: 'site:weworkremotely.com "Frontend" OR "Full Stack" React Europe'
+    query: 'site:weworkremotely.com "Frontend" OR "Full Stack" React Europe OR EMEA'
     enabled: true
 
-  - name: Welcome to the Jungle — DACH Frontend
-    query: 'site:welcometothejungle.com Germany OR Netherlands OR France "Frontend" OR "Full Stack" React senior'
+  - name: Welcome to the Jungle — Germany
+    query: 'site:welcometothejungle.com Germany OR Berlin OR Munich "Frontend" OR "Full Stack" React senior'
     enabled: true
 
-  - name: Manfred — EU Frontend Senior
-    query: 'site:getmanfred.com "Frontend" OR "Full Stack" OR "React" Germany OR Spain OR remote Europe senior'
+  - name: Welcome to the Jungle — Netherlands + Belgium
+    query: 'site:welcometothejungle.com Netherlands OR Belgium OR Amsterdam OR Brussels "Frontend" OR "Full Stack" React'
     enabled: true
 
   - name: Himalayas — EU React / Frontend
-    query: 'site:himalayas.app "Frontend" OR "Full Stack" React TypeScript Europe remote'
+    query: 'site:himalayas.app "Frontend" OR "Full Stack" React TypeScript Europe remote Germany OR Netherlands'
     enabled: true
 
+  # -- Germany --
   - name: Arbeitnow — Germany Tech
-    query: 'site:arbeitnow.com "Frontend" OR "Full Stack" OR "React" Germany OR remote'
+    query: 'site:arbeitnow.com "Frontend" OR "Full Stack" OR "React" Germany OR Berlin OR Munich OR remote'
+    enabled: true
+
+  - name: StepStone Germany — Frontend
+    query: 'site:stepstone.de "Frontend" OR "Full Stack" OR "React" OR "JavaScript" Berlin OR Munich OR remote'
+    enabled: true
+
+  - name: Indeed Germany — React / Frontend
+    query: 'site:de.indeed.com "Frontend Developer" OR "Full Stack" React TypeScript Berlin OR Germany remote'
+    enabled: true
+
+  - name: XING Jobs — Germany
+    query: 'site:xing.com/jobs "Frontend" OR "Full Stack" OR "React Entwickler" Germany OR Berlin OR remote'
+    enabled: true
+
+  # -- Netherlands --
+  - name: Indeed Netherlands — Frontend
+    query: 'site:nl.indeed.com "Frontend" OR "Full Stack" React TypeScript Amsterdam OR Netherlands remote'
+    enabled: true
+
+  - name: Welcome to the Jungle — Netherlands
+    query: 'site:welcometothejungle.com/nl "Frontend" OR "Full Stack" React Amsterdam OR Rotterdam'
+    enabled: true
+
+  - name: Undutchables — Netherlands tech
+    query: 'site:undutchables.nl "Frontend" OR "Full Stack" OR "Software Engineer" React Amsterdam'
+    enabled: true
+
+  # -- Poland --
+  - name: No Fluff Jobs — Poland React
+    query: 'site:nofluffjobs.com "Frontend" OR "Full Stack" OR "React" OR "JavaScript" Warsaw OR Krakow OR remote'
+    enabled: true
+
+  - name: Just Join IT — Poland
+    query: 'site:justjoin.it "Frontend" OR "Full Stack" OR "React" Warsaw OR Krakow OR remote'
+    enabled: true
+
+  - name: Pracuj.pl — Poland IT
+    query: 'site:pracuj.pl "Programista" OR "Frontend" OR "React" OR "Full Stack" Warszawa OR Kraków OR zdalnie'
+    enabled: true
+
+  - name: Bulldogjob — Poland
+    query: 'site:bulldogjob.com "Frontend" OR "Full Stack" OR "React" Warsaw OR remote'
+    enabled: true
+
+  - name: SolidJobs — Poland (site search)
+    query: 'site:solid.jobs "Frontend" OR "React" OR "Full Stack" OR "JavaScript" Warszawa OR Kraków'
+    enabled: true
+
+  # -- Belgium --
+  - name: Jobat Belgium — Tech
+    query: 'site:jobat.be "Frontend" OR "Full Stack" OR "React" OR "JavaScript" Brussels OR Antwerp OR remote'
+    enabled: true
+
+  - name: StepStone Belgium — Developer
+    query: 'site:stepstone.be "Frontend" OR "Full Stack" OR "Software Engineer" Brussels OR Belgium'
+    enabled: true
+
+  - name: Indeed Belgium — Frontend
+    query: 'site:be.indeed.com "Frontend" OR "Full Stack" React Brussels OR Belgium remote'
+    enabled: true
+
+  # -- Sweden --
+  - name: The Hub — Sweden startups
+    query: 'site:thehub.io/jobs "Frontend" OR "Full Stack" OR "React" Stockholm OR Sweden remote'
+    enabled: true
+
+  - name: Indeed Sweden — Frontend
+    query: 'site:se.indeed.com "Frontend" OR "Full Stack" React Stockholm OR Sweden remote'
+    enabled: true
+
+  - name: Arbetsförmedlingen — Sweden (site)
+    query: 'site:arbetsformedlingen.se "Frontend" OR "Fullstack" OR "React" Stockholm OR Göteborg OR distans'
+    enabled: true
+
+  # -- Denmark --
+  - name: Jobindex Denmark — Developer
+    query: 'site:jobindex.dk "Frontend" OR "Full Stack" OR "React" OR "JavaScript" København OR Aarhus OR remote'
+    enabled: true
+
+  - name: The Hub — Denmark
+    query: 'site:thehub.io/jobs Denmark OR Copenhagen "Frontend" OR "Full Stack" React'
+    enabled: true
+
+  - name: Indeed Denmark — Frontend
+    query: 'site:dk.indeed.com "Frontend" OR "Full Stack" React Copenhagen OR Denmark remote'
+    enabled: true
+
+  - name: Manfred — EU Frontend Senior
+    query: 'site:getmanfred.com "Frontend" OR "Full Stack" OR "React" Germany OR Netherlands OR Poland OR remote Europe senior'
     enabled: true
 
   # -- Legacy AI-focused queries (disabled — not matching target roles) --
@@ -453,7 +653,7 @@ job_boards:
     enabled: true
     notes: "Remote jobs aggregator feed"
 
-  - name: Arbeitsagentur — Frontend / Full Stack (DE)
+  - name: Arbeitsagentur — Frontend / Full Stack (DE Berlin)
     provider: arbeitsagentur
     arbeitsagentur:
       keywords:
@@ -463,13 +663,47 @@ job_boards:
         - "Full Stack Developer"
         - "React Entwickler"
         - "JavaScript Entwickler"
+        - "Webentwickler"
       wo: Berlin
       umkreis: 100
       days: 30
       remoteNationwide: true
       remoteMatch: filter
     enabled: true
-    notes: "German federal job search API — regional + nationwide remote pass"
+    notes: "German federal job API — Berlin region + nationwide remote"
+
+  - name: Arbeitsagentur — Frontend / Full Stack (DE Munich)
+    provider: arbeitsagentur
+    arbeitsagentur:
+      keywords:
+        - "Frontend Entwickler"
+        - "Frontend Developer"
+        - "Full Stack Entwickler"
+        - "React Entwickler"
+        - "JavaScript Entwickler"
+      wo: München
+      umkreis: 80
+      days: 30
+      remoteNationwide: true
+      remoteMatch: filter
+    enabled: true
+    notes: "German federal job API — Munich region + nationwide remote"
+
+  - name: Arbeitsagentur — Frontend / Full Stack (DE Hamburg)
+    provider: arbeitsagentur
+    arbeitsagentur:
+      keywords:
+        - "Frontend Entwickler"
+        - "Frontend Developer"
+        - "Full Stack Entwickler"
+        - "React Entwickler"
+      wo: Hamburg
+      umkreis: 80
+      days: 30
+      remoteNationwide: true
+      remoteMatch: filter
+    enabled: true
+    notes: "German federal job API — Hamburg region + nationwide remote"
 
   # ── SolidJobs (Polish market) ──────────────────────────────────────
   # Public API — no auth needed. Division in URL path, campaign=career-ops for tracking.
