@@ -99,6 +99,22 @@ export default function DashboardPage() {
     setPage(0);
   }
 
+  async function updateJobStatus(jobId: string, status: string) {
+    setError('');
+    const res = await fetch(`/api/jobs/${jobId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      const message = json.error || 'Failed to update status';
+      setError(message);
+      throw new Error(message);
+    }
+    setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, status } : j)));
+  }
+
   return (
     <div className="container">
       <header className="app-header">
@@ -106,6 +122,16 @@ export default function DashboardPage() {
           <h1>Career-Ops</h1>
           <p className="muted">Shared Supabase inbox · same jobs locally and on Vercel</p>
         </div>
+        <button
+          type="button"
+          className="btn btn-secondary btn-sm"
+          onClick={async () => {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            window.location.href = '/login';
+          }}
+        >
+          Log out
+        </button>
       </header>
 
       <nav className="tabs" aria-label="Dashboard sections">
@@ -153,6 +179,7 @@ export default function DashboardPage() {
           onPageChange={setPage}
           onPageSizeChange={handlePageSizeChange}
           onRefresh={() => loadJobs(page, pageSize)}
+          onStatusUpdate={updateJobStatus}
         />
       )}
     </div>

@@ -4,7 +4,7 @@ export type Job = {
   company: string;
   role: string;
   location: string | null;
-  status: string;
+  status: 'pending' | 'applied' | 'interview' | string;
   first_seen: string;
   source: string | null;
 };

@@ -265,15 +265,14 @@ title_filter:
     - "Scrum Master"
   seniority_boost:
     - "Senior"
-    - "Staff"
-    - "Principal"
-    - "Lead"
     - "Sr."
     - "Sr "
 
-# -- Search queries --
-# Each query triggers a WebSearch. Use site: to filter by portal.
-# The scanner extracts title, URL, and company from results.
+# -- Search queries (AI agent only — NOT used by `npm run scan` / UI Scan) --
+# These run only when an AI agent executes `/career-ops scan` with WebSearch (Level 3).
+# The zero-token scanner (`scan.mjs`) ignores this block — it uses `job_boards` +
+# `tracked_companies` only. Keep queries here for optional broad discovery in chat;
+# enable/disable individual queries with `enabled: true/false`.
 
 search_queries:
   # -- EU frontend / full-stack (Prakash Shukla — config/profile.yml) --
@@ -436,6 +435,42 @@ tracked_companies:
 
 job_boards:
 
+  # ── EU / remote aggregators (zero-token JSON feeds) ─────────────────
+  # scan.mjs applies title_filter + location_filter to every row returned.
+
+  - name: RemoteOK
+    provider: remoteok
+    enabled: true
+    notes: "Global remote feed (~100 latest postings); filters applied client-side"
+
+  - name: Remotive
+    provider: remotive
+    enabled: true
+    notes: "Remote jobs API feed; filters applied client-side"
+
+  - name: Working Nomads
+    provider: workingnomads
+    enabled: true
+    notes: "Remote jobs aggregator feed"
+
+  - name: Arbeitsagentur — Frontend / Full Stack (DE)
+    provider: arbeitsagentur
+    arbeitsagentur:
+      keywords:
+        - "Frontend Entwickler"
+        - "Frontend Developer"
+        - "Full Stack Entwickler"
+        - "Full Stack Developer"
+        - "React Entwickler"
+        - "JavaScript Entwickler"
+      wo: Berlin
+      umkreis: 100
+      days: 30
+      remoteNationwide: true
+      remoteMatch: filter
+    enabled: true
+    notes: "German federal job search API — regional + nationwide remote pass"
+
   # ── SolidJobs (Polish market) ──────────────────────────────────────
   # Public API — no auth needed. Division in URL path, campaign=career-ops for tracking.
   # Available divisions: it, engineering, marketing, sales, hr, logistics, finances, other
@@ -487,26 +522,3 @@ job_boards:
     provider: solidjobs
     enabled: false
     notes: "Polish job board — Other specialists division"
-
-  # -- Indonesia job boards (provider: jobstreet / glints) --
-
-  - name: Jobstreet Indonesia
-    provider: jobstreet
-    api: https://id.jobstreet.com/api/chalice-search/v4/search
-    siteKey: ID-Main
-    searchKeywords: "data scientist"
-    searchLocation: "Jakarta"
-    pageSize: 30
-    maxPages: 3
-    enabled: false
-    notes: "Indonesia's largest job board (SEEK group). Public JSON search API — zero tokens."
-
-  - name: Glints Indonesia
-    provider: glints
-    api: https://glints.com/api/graphql
-    searchKeywords: "data scientist"
-    countryCode: ID
-    pageSize: 30
-    maxPages: 3
-    enabled: false
-    notes: "SEA job platform covering ID/SG/MY/VN. Undocumented public GraphQL API — adjust graphqlQuery if schema changes."

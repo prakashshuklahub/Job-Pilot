@@ -26,6 +26,9 @@ cp .env.example .env.local   # optional — only CRON_SECRET or overrides
 #   SUPABASE_URL
 #   SUPABASE_SERVICE_ROLE_KEY
 
+# Dashboard password (locks UI + APIs when set; required on Vercel production):
+#   UI_PASSWORD=your-secret
+
 npm install
 npm run dev
 ```
@@ -45,6 +48,7 @@ Open http://localhost:3000 — you will see the **same jobs** as on Vercel becau
 4. Environment variables (same Supabase project as local `../.env`):
    - `SUPABASE_URL`
    - `SUPABASE_SERVICE_ROLE_KEY`
+   - `UI_PASSWORD` (locks all pages and API routes — login screen)
    - `CRON_SECRET` (random string — Vercel Cron sends `Authorization: Bearer <CRON_SECRET>`)
 5. Deploy
 

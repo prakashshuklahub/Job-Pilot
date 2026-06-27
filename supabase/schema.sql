@@ -27,7 +27,7 @@ create table if not exists career_ops_jobs (
   location text,
   source text,
   status text not null default 'pending'
-    check (status in ('pending', 'evaluated', 'applied', 'discarded', 'expired')),
+    check (status in ('pending', 'applied', 'interview')),
   score numeric(3,1),
   report_path text,
   pdf_path text,
@@ -91,3 +91,5 @@ create policy "anon read career_ops_jobs" on career_ops_jobs for select to anon 
 
 drop policy if exists "anon read career_ops_scan_runs" on career_ops_scan_runs;
 create policy "anon read career_ops_scan_runs" on career_ops_scan_runs for select to anon using (true);
+
+-- Legacy status migration: run supabase/migrate-job-status.sql on existing projects.
