@@ -48,7 +48,7 @@
     "@supabase/supabase-js": "^2.108.2",
     "dotenv": "^17.0.0",
     "js-yaml": "^4.1.1",
-    "playwright": "1.61.0",
+    "playwright": "1.61.1",
     "ws": "^8.18.1"
   }
 }
